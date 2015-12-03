@@ -39,11 +39,27 @@ Z = [0  0  0  0  0  0  0  0  0  0];
 tmax = 2100;
 mem = 10000; %memory allocation
 spec = 6; %number of species
+MC = 1000;
+mem_all = mem*MC;
+T_all = zeros(1,mem_all);
+N_all = zeros(spec,mem_all);
+iter = 1;
 
 tic
-[T,N] = EE_Gillespie(tmax,c,X,mem,spec,Z,D);
+for i = 1:MC
+    [T,N] = EE_Gillespie(tmax,c,X,mem,spec,Z,D);
+    s = size(T,2);
+    if iter+s>=mem_all
+        [T_all,N_all,mem_all]=incr_mem(mem_all, T_all, N_all,spec);
+    end
+    T_all(1,iter:iter+s-1)=T;
+    N_all(:,iter:iter+s-1)=N;
+    iter = iter+s;
+%     fprintf('Doubling memory for data. (Reallocation.)  t(%d)=%f', m, t(m))
+end
 toc
-  
+T_all = T_all(1:iter-1);
+N_all = N_all(:,1:iter-1);   
 t_m = T/60;
 
 %figure 2 plots
@@ -87,9 +103,26 @@ xlabel('Number of mRNAs')
 Y = get(gca,'YLim');
 axis([0 20 0 max(.25,Y(2))])
 
+mem_all = mem*MC;
+T_all = zeros(1,mem_all);
+N_all = zeros(spec,mem_all);
+iter = 1;
+
 tic
-[T,N] = EE_SQEA(tmax,c,X,mem,spec,Z);
+for i = 1:MC
+    [T,N] = EE_SQEA(tmax,c,X,mem,spec,Z);
+    s = size(T,2);
+    if iter+s>=mem_all
+        [T_all,N_all,mem_all]=incr_mem(mem_all, T_all, N_all,spec);
+    end
+    T_all(1,iter:iter+s-1)=T;
+    N_all(:,iter:iter+s-1)=N;
+    iter = iter+s;
+end
 toc
+T_all = T_all(1:iter-1);
+N_all = N_all(:,1:iter-1); 
+
 
 t_m = T/60;
 
@@ -141,7 +174,7 @@ iter = 1;
 T = zeros(1,mem); %empty time array
 N = zeros(spec,mem); %empty species array
 t=0;
-MC_num = 1;
+% MC_num = 1;
 
 while t <= tmax
     
@@ -159,13 +192,14 @@ while t <= tmax
     a = [a1; a2; a3; a4; a5; a6; a7; a8; a9; a10];
     a_sum = sum(a);
     
-    tau=1/a_sum*log(1/rand);
+    tau=1/a_sum*log(1/rand); %make sure rand is from exponential distribution, with exponential rate of the sum
 %     tau=-1/a_sum*log(rand);
-    u = zeros(1,MC_num);
-    for i = 1:MC_num
-        u(i) = find(cumsum(a)>a_sum*rand,1);
-    end
-    u = mode(u);
+%     u = zeros(1,MC_num);
+%     for i = 1:MC_num
+%         u(i) = find(cumsum(a)>a_sum*rand,1);
+%     end
+%     u = mode(u);
+    u = find(cumsum(a)>a_sum*rand,1); %pull from discrete distribution
     Z(u) = Z(u)+1;
     X = X + D(:,u);
 %     X(1) = 2 + Z(1) - Z(2) - 2*Z(9) + 2*Z(10);
@@ -180,9 +214,10 @@ while t <= tmax
     t=t+ tau;
     iter = iter + 1;
     if iter>=mem %adjust memory
-        T = [T,zeros(1,mem)];
-        N = [N,zeros(spec,mem)];
-        mem = 2*mem;
+%         T = [T,zeros(1,mem)];
+%         N = [N,zeros(spec,mem)];
+%         mem = 2*mem;
+        [T,N,mem]=incr_mem(mem, T, N,spec);
     end
 end
 %remove extra zeros
@@ -190,7 +225,13 @@ T = T(1:iter-1);
 N = N(:,1:iter-1); 
 return
 
-function [T,N] = EE_SQEA(tmax,c,X,mem,spec,Z)
+function [T,N,mem]=incr_mem(mem, T, N,spec)
+    T = [T,zeros(1,mem)];
+    N = [N,zeros(spec,mem)];
+    mem = 2*mem;
+return
+
+function [T,N] = EE_SQEA(tmax,c,X,mem,spec,Z) %try doing fast first
 iter = 1;
 T = zeros(1,mem); %empty time array
 N = zeros(spec,mem); %empty species array
@@ -239,9 +280,10 @@ while t <= tmax
     t=t+ tau;
     iter = iter + 1;
     if iter>=mem %adjust memory
-        T = [T,zeros(1,mem)];
-        N = [N,zeros(spec,mem)];
-        mem = 2*mem;
+%         T = [T,zeros(1,mem)];
+%         N = [N,zeros(spec,mem)];
+%         mem = 2*mem;
+        [T,N,mem]=incr_mem(mem, T, N,spec);
     end
 end
 %remove extra zeros
@@ -249,44 +291,44 @@ T = T(1:iter-1);
 N = N(:,1:iter-1); 
 return
 
-function [T,N] = EE_Poisson(tmax,c,X,mem,spec,D)
-iter = 1;
-T = zeros(1,mem); %empty time array
-N = zeros(spec,mem); %empty species array
-t=0;
-
-while t <= tmax
-    
-    a1 = c(1)*X(3);
-    a2 = c(2)*X(1);
-    a3 = c(3)*X(5);
-    a4 = c(4)*X(3);
-    a5 = c(5)*X(2)*X(4);
-    a6 = c(6)*X(5);
-    a7 = c(7)*X(2)*X(5);
-    a8 = c(8)*X(6);
-    a9 = c(9)*X(1)*(X(1)-1)/2;
-    a10 = c(10)*X(2);
-    
-    a = [a1; a2; a3; a4; a5; a6; a7; a8; a9; a10];
-    a_sum = sum(a);
-    
-%     tau=-1/a_sum*log(rand);
-    u = find(cumsum(a)>a_sum*rand,1);
-    X = X + D(:,u);
-    
-    T(iter) = t;
-    N(:,iter) = X;
-    t=t+ .05;
-    iter = iter + 1;
-    if iter>=mem %adjust memory
-        T = [T,zeros(1,mem)];
-        N = [N,zeros(spec,mem)];
-        mem = 2*mem;
-    end
-end
-%remove extra zeros
-T = T(1:iter-1);
-N = N(:,1:iter-1); 
-return
+% function [T,N] = EE_Poisson(tmax,c,X,mem,spec,D)
+% iter = 1;
+% T = zeros(1,mem); %empty time array
+% N = zeros(spec,mem); %empty species array
+% t=0;
+% 
+% while t <= tmax
+%     
+%     a1 = c(1)*X(3);
+%     a2 = c(2)*X(1);
+%     a3 = c(3)*X(5);
+%     a4 = c(4)*X(3);
+%     a5 = c(5)*X(2)*X(4);
+%     a6 = c(6)*X(5);
+%     a7 = c(7)*X(2)*X(5);
+%     a8 = c(8)*X(6);
+%     a9 = c(9)*X(1)*(X(1)-1)/2;
+%     a10 = c(10)*X(2);
+%     
+%     a = [a1; a2; a3; a4; a5; a6; a7; a8; a9; a10];
+%     a_sum = sum(a);
+%     
+% %     tau=-1/a_sum*log(rand);
+%     u = find(cumsum(a)>a_sum*rand,1);
+%     X = X + D(:,u);
+%     
+%     T(iter) = t;
+%     N(:,iter) = X;
+%     t=t+ .05;
+%     iter = iter + 1;
+%     if iter>=mem %adjust memory
+%         T = [T,zeros(1,mem)];
+%         N = [N,zeros(spec,mem)];
+%         mem = 2*mem;
+%     end
+% end
+% %remove extra zeros
+% T = T(1:iter-1);
+% N = N(:,1:iter-1); 
+% return
 
