@@ -26,15 +26,13 @@ D = [1 -1  0  0  0  0  0  0 -2  2;
      0  0  0  0  0  0  1 -1  0  0];
 Z = [0  0  0  0  0  0  0  0  0  0];
  
-<<<<<<< HEAD
 % tmax = 600; %max time
 tmax = 2100;
 mem = 10000; %memory allocation for loop
-=======
+
 tmax = 600; %max time
 %tmax = 2100; %If we are just recreating graph at 10 minutes, why go to 35 minutes? Since Markov mathematically same
 mem = 10000; %memory allocation... what is math behind this?
->>>>>>> 15b31ae019aa0fbbea495a0288ad0dcbfd1da2e7
 spec = 6; %number of species
 MC = 1000; %monte carlo
 mem_all = mem*MC; %total memory allocation
@@ -189,23 +187,14 @@ while t <= tmax
     a = [a1; a2; a3; a4; a5; a6; a7; a8; a9; a10];
     a_sum = sum(a);
     
-<<<<<<< HEAD
     tau=1/a_sum*log(1/rand); %make sure rand is from exponential distribution, with exponential rate of the sum
 %     tau = exprnd(a_sum); %pull random number from expon dist with mu =  a_sum
     
     u = find(cumsum(a)>a_sum*rand,1); %pull from discrete distribution
     Z(u) = Z(u)+1;
-=======
     tau = exprnd(1/a_sum);
-%    tau=1/a_sum*log(1/rand); %make sure rand is from exponential distribution, with exponential rate of the sum
-%     tau=-1/a_sum*log(rand);
-%     u = zeros(1,MC_num);
-%     for i = 1:MC_num
-%         u(i) = find(cumsum(a)>a_sum*rand,1);
-%     end
-%     u = mode(u);
+
     u = find(cumsum(a)>a_sum*rand,1); %pull from discrete distribution... Why don't you keep it normalized and do cumsum(a/a_sum)>rand?
->>>>>>> 15b31ae019aa0fbbea495a0288ad0dcbfd1da2e7
     X = X + D(:,u);
   
     T(iter) = t;
@@ -213,9 +202,6 @@ while t <= tmax
     t=t+ tau;
     iter = iter + 1;
     if iter>=mem %adjust memory
-%         T = [T,zeros(1,mem)];
-%         N = [N,zeros(spec,mem)];
-%         mem = 2*mem;
         [T,N,mem]=incr_mem(mem, T, N,spec);
     end
 end
