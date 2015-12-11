@@ -10,15 +10,6 @@ c = [0.043; % [s^-1] RNA -> RNA + M
 	 0.083; % [s^-1] M + M -> D
 	 0.5]; % [s^-1] D -> M + M
     
-%     Z = [Z1; Z2; Z3; Z4; Z5; Z6; Z7; Z8; Z9; Z10];
-%     
-%     X1 = 2 + Z1 - Z2 - 2*Z9 + 2*Z10; % M (Protein monomer)
-%     X2 = 4 - Z5 + Z6 - Z7 + Z8 + Z9 - Z10; % D (Transcription factor dimer)
-%     X3 = Z3 - Z4; % mRNA
-%     X4 = 2 - Z5 + Z6; % DNA template free of dimers
-%     X5 =  Z5 - Z6 - Z7 + Z8; % DNA template bound at R1
-%     X6 = Z7 - Z8; % DNA template bound at R1 and R2
-    
 X = [2; %M
      4; %D
      0; %RNA
@@ -37,12 +28,12 @@ Z = [0  0  0  0  0  0  0  0  0  0];
  
 % tmax = 600; %max time
 tmax = 2100;
-mem = 10000; %memory allocation
+mem = 10000; %memory allocation for loop
 spec = 6; %number of species
-MC = 1000;
-mem_all = mem*MC;
-T_all = zeros(1,mem_all);
-N_all = zeros(spec,mem_all);
+MC = 1000; %monte carlo
+mem_all = mem*MC; %total memory allocation
+T_all = zeros(1,mem_all); %empty array for time
+N_all = zeros(spec,mem_all); %empty array for species
 iter = 1;
 
 tic
@@ -193,21 +184,11 @@ while t <= tmax
     a_sum = sum(a);
     
     tau=1/a_sum*log(1/rand); %make sure rand is from exponential distribution, with exponential rate of the sum
-%     tau=-1/a_sum*log(rand);
-%     u = zeros(1,MC_num);
-%     for i = 1:MC_num
-%         u(i) = find(cumsum(a)>a_sum*rand,1);
-%     end
-%     u = mode(u);
+%     tau = exprnd(a_sum); %pull random number from expon dist with mu =  a_sum
+    
     u = find(cumsum(a)>a_sum*rand,1); %pull from discrete distribution
     Z(u) = Z(u)+1;
     X = X + D(:,u);
-%     X(1) = 2 + Z(1) - Z(2) - 2*Z(9) + 2*Z(10);
-%     X(2) = 4 - Z(5) + Z(6) - Z(7) + Z(8) + Z(9) - Z(10);
-%     X(3) = Z(3) -Z(4);
-%     X(4) = 2 - Z(5) + Z(6);
-%     X(5) = Z(5) - Z(6) - Z(7) + Z(8);
-%     X(6) = Z(7) - Z(8);
   
     T(iter) = t;
     N(:,iter) = X;
@@ -262,6 +243,7 @@ while t <= tmax
     
     tau=1/a_sum*log(1/rand);
 %     tau=-1/a_sum*log(rand);
+%     tau = exprnd(a_sum);
     u = zeros(1,MC_num);
     for i = 1:MC_num
         u(i) = find(cumsum(a)>a_sum*rand,1);
@@ -290,45 +272,4 @@ end
 T = T(1:iter-1);
 N = N(:,1:iter-1); 
 return
-
-% function [T,N] = EE_Poisson(tmax,c,X,mem,spec,D)
-% iter = 1;
-% T = zeros(1,mem); %empty time array
-% N = zeros(spec,mem); %empty species array
-% t=0;
-% 
-% while t <= tmax
-%     
-%     a1 = c(1)*X(3);
-%     a2 = c(2)*X(1);
-%     a3 = c(3)*X(5);
-%     a4 = c(4)*X(3);
-%     a5 = c(5)*X(2)*X(4);
-%     a6 = c(6)*X(5);
-%     a7 = c(7)*X(2)*X(5);
-%     a8 = c(8)*X(6);
-%     a9 = c(9)*X(1)*(X(1)-1)/2;
-%     a10 = c(10)*X(2);
-%     
-%     a = [a1; a2; a3; a4; a5; a6; a7; a8; a9; a10];
-%     a_sum = sum(a);
-%     
-% %     tau=-1/a_sum*log(rand);
-%     u = find(cumsum(a)>a_sum*rand,1);
-%     X = X + D(:,u);
-%     
-%     T(iter) = t;
-%     N(:,iter) = X;
-%     t=t+ .05;
-%     iter = iter + 1;
-%     if iter>=mem %adjust memory
-%         T = [T,zeros(1,mem)];
-%         N = [N,zeros(spec,mem)];
-%         mem = 2*mem;
-%     end
-% end
-% %remove extra zeros
-% T = T(1:iter-1);
-% N = N(:,1:iter-1); 
-% return
 
