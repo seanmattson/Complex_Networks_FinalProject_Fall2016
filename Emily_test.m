@@ -26,9 +26,15 @@ D = [1 -1  0  0  0  0  0  0 -2  2;
      0  0  0  0  0  0  1 -1  0  0];
 Z = [0  0  0  0  0  0  0  0  0  0];
  
+<<<<<<< HEAD
 % tmax = 600; %max time
 tmax = 2100;
 mem = 10000; %memory allocation for loop
+=======
+tmax = 600; %max time
+%tmax = 2100; %If we are just recreating graph at 10 minutes, why go to 35 minutes? Since Markov mathematically same
+mem = 10000; %memory allocation... what is math behind this?
+>>>>>>> 15b31ae019aa0fbbea495a0288ad0dcbfd1da2e7
 spec = 6; %number of species
 MC = 1000; %monte carlo
 mem_all = mem*MC; %total memory allocation
@@ -36,7 +42,7 @@ T_all = zeros(1,mem_all); %empty array for time
 N_all = zeros(spec,mem_all); %empty array for species
 iter = 1;
 
-tic
+tic %Never knew about this command, love it
 for i = 1:MC
     [T,N] = EE_Gillespie(tmax,c,X,mem,spec,Z,D);
     s = size(T,2);
@@ -160,7 +166,7 @@ axis([0 20 0 max(.25,Y(2))])
 
 return
 
-function [T,N] = EE_Gillespie(tmax,c,X,mem,spec,Z,D)
+function [T,N] = EE_Gillespie(tmax,c,X,mem,spec,Z,D) %Where do you update Z?
 iter = 1;
 T = zeros(1,mem); %empty time array
 N = zeros(spec,mem); %empty species array
@@ -183,11 +189,23 @@ while t <= tmax
     a = [a1; a2; a3; a4; a5; a6; a7; a8; a9; a10];
     a_sum = sum(a);
     
+<<<<<<< HEAD
     tau=1/a_sum*log(1/rand); %make sure rand is from exponential distribution, with exponential rate of the sum
 %     tau = exprnd(a_sum); %pull random number from expon dist with mu =  a_sum
     
     u = find(cumsum(a)>a_sum*rand,1); %pull from discrete distribution
     Z(u) = Z(u)+1;
+=======
+    tau = exprnd(1/a_sum);
+%    tau=1/a_sum*log(1/rand); %make sure rand is from exponential distribution, with exponential rate of the sum
+%     tau=-1/a_sum*log(rand);
+%     u = zeros(1,MC_num);
+%     for i = 1:MC_num
+%         u(i) = find(cumsum(a)>a_sum*rand,1);
+%     end
+%     u = mode(u);
+    u = find(cumsum(a)>a_sum*rand,1); %pull from discrete distribution... Why don't you keep it normalized and do cumsum(a/a_sum)>rand?
+>>>>>>> 15b31ae019aa0fbbea495a0288ad0dcbfd1da2e7
     X = X + D(:,u);
   
     T(iter) = t;
